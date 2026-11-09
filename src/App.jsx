@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
-import { formatReminder, isSameDay, notificationPermission, toLocalInput, useReminders, useTasks } from './tasks.js'
+import TaskCarousel from './TaskCarousel.jsx'
+import { createExampleTasks, formatReminder, isSameDay, notificationPermission, sortTasks, TASKS_PER_PAGE, toLocalInput, useReminders, useTasks } from './tasks.js'
 import './App.css'
 
 const fullDate = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })
@@ -9,6 +10,7 @@ const views = [
   { id: 'today', icon: 'sun', title: '今日提醒', empty: '设置在今天的提醒会出现在这里。' },
   { id: 'done', icon: 'complete', title: '已完成', empty: '勾选任务后，可以在这里回看。' },
 ]
+const firstPage = { page: 0, direction: 0 }
 
 function TaskEditor({ task, onClose, onSave, onDelete }) {
   const dialog = useRef(null)
@@ -132,8 +134,11 @@ function TaskRow({ task, now, onToggle, onEdit }) {
       <input className="task-check" type="checkbox" checked={task.done} onChange={onToggle}
         aria-label={`${task.done ? '重新打开' : '完成'}：${task.title}`} />
       <div className="task-content">
-        <strong>{task.title}</strong>
-        {task.note && <p>{task.note}</p>}
+        <div className="task-title">
+          <strong title={task.title}>{task.title}</strong>
+          {task.example && <span className="example-tag">示例</span>}
+        </div>
+        {task.note && <p title={task.note}>{task.note}</p>}
         {task.reminderAt !== null && (
           <span className={late ? 'task-time late' : 'task-time'}>
             <Icon name="clock" size={14} /> {formatReminder(task.reminderAt, now)}{late && ' · 已到期'}
@@ -199,6 +204,7 @@ function App() {
   const { now, notices, dismiss } = useReminders(tasks, updateTasks)
   const [view, setView] = useState('all')
   const [sort, setSort] = useState('time')
+  const [position, setPosition] = useState(firstPage)
   const [editor, setEditor] = useState(null)
   const [status, setStatus] = useState('')
   const editorTrigger = useRef(null)
@@ -211,16 +217,19 @@ function App() {
   const progress = tasks.length ? Math.round(done.length / tasks.length * 100) : 0
   const activeView = views.find((item) => item.id === view)
   const currentTasks = view === 'all' ? tasks : view === 'today' ? today : done
-  const sortedTasks = [...currentTasks].sort((first, second) => {
-    const byStatus = Number(first.done) - Number(second.done)
-    const byReminder = (first.reminderAt ?? Infinity) - (second.reminderAt ?? Infinity)
-    return byStatus || (sort === 'time' ? byReminder : 0) || second.createdAt - first.createdAt
-  })
+  const sortedTasks = sortTasks(currentTasks, sort)
+  const hasExamples = tasks.some((task) => task.id.startsWith('example-'))
   const upcoming = tasks.filter((task) => !task.done && task.reminderAt !== null && task.reminderAt > now)
     .sort((first, second) => first.reminderAt - second.reminderAt).slice(0, 3)
   const dueNotices = notices.map((id) => tasks.find((task) => task.id === id))
     .filter((task) => task && !task.done && task.remindedAt !== null)
   const editingTask = tasks.find((task) => task.id === editor?.id)
+
+  function addExamples() {
+    updateTasks((current) => current.some((task) => task.id.startsWith('example-')) ? current : [...current, ...createExampleTasks()])
+    setPosition(firstPage)
+    setStatus('已添加 9 条示例待办')
+  }
 
   function openEditor(id = null) {
     editorTrigger.current = document.activeElement
@@ -241,12 +250,19 @@ function App() {
       updateTasks((current) => current.map((task) => task.id === editor.id ? {
         ...task,
         ...fields,
+        example: false,
         remindedAt: task.reminderAt === fields.reminderAt ? task.remindedAt : null,
       } : task))
       setStatus('待办已更新')
     } else {
       const task = { ...fields, id: crypto.randomUUID(), createdAt: Date.now(), done: false, remindedAt: null }
-      updateTasks((current) => [...current, task])
+      let page = 0
+      updateTasks((current) => {
+        const next = [...current, task]
+        page = Math.floor(sortTasks(next, sort).findIndex((item) => item.id === task.id) / TASKS_PER_PAGE)
+        return next
+      })
+      setPosition({ page, direction: 0 })
       setView('all')
       setStatus('待办已添加')
     }
@@ -265,6 +281,10 @@ function App() {
     dismiss(id)
   }
 
+  function renderTask(task) {
+    return <TaskRow key={task.id} task={task} now={now} onToggle={() => toggleTask(task.id)} onEdit={() => openEditor(task.id)} />
+  }
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -276,7 +296,10 @@ function App() {
         <nav className="navigation" aria-label="任务视图">
           {views.map(({ id, icon, title }) => (
             <button type="button" key={id} className={id === view ? 'nav-item active' : 'nav-item'}
-              aria-current={id === view ? 'page' : undefined} onClick={() => setView(id)}>
+              aria-current={id === view ? 'page' : undefined} onClick={() => {
+                if (id !== view) setPosition(firstPage)
+                setView(id)
+              }}>
               <Icon name={icon} size={19} /><span>{title}</span>
               <small>{id === 'all' ? tasks.length : id === 'today' ? today.length : done.length}</small>
             </button>
@@ -327,21 +350,30 @@ function App() {
           <div className="content-grid">
             <section className="panel task-panel" aria-labelledby="task-heading">
               <div className="panel-heading">
-                <div><h2 id="task-heading">{activeView.title}</h2><p>共 {currentTasks.length} 项</p></div>
+                <div>
+                  <h2 id="task-heading">{activeView.title}</h2>
+                  <div className="task-meta">
+                    <p>共 {currentTasks.length} 项</p>
+                    {view === 'all' && !hasExamples && (
+                      <button type="button" className="example-button" onClick={addExamples}>添加示例</button>
+                    )}
+                  </div>
+                </div>
                 <label className="sort-control">
                   <Icon name="sort" size={16} />
-                  <select aria-label="排序方式" value={sort} onChange={(event) => setSort(event.target.value)}>
+                  <select aria-label="排序方式" value={sort} onChange={(event) => {
+                    setSort(event.target.value)
+                    setPosition(firstPage)
+                  }}>
                     <option value="time">按提醒时间</option><option value="new">按添加时间</option>
                   </select>
                   <Icon name="chevron" size={13} />
                 </label>
               </div>
               {sortedTasks.length > 0 ? (
-                <ul className="task-list">
-                  {sortedTasks.map((task) => (
-                    <TaskRow key={task.id} task={task} now={now} onToggle={() => toggleTask(task.id)} onEdit={() => openEditor(task.id)} />
-                  ))}
-                </ul>
+                view === 'all' ? (
+                  <TaskCarousel tasks={sortedTasks} position={position} setPosition={setPosition} editorOpen={Boolean(editor)} renderTask={renderTask} />
+                ) : <ul className="task-list">{sortedTasks.map(renderTask)}</ul>
               ) : (
                 <div className="empty-state">
                   <span className="empty-icon"><Icon name={activeView.icon} size={27} /></span>

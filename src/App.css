@@ -157,6 +157,16 @@
 }
 .panel-heading h2 { font-size: 17px; line-height: 1.35; }
 .panel-heading p { margin-top: 4px; color: var(--muted); font-size: 12px; }
+.task-meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
+.example-button {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgb(195 236 255 / .5);
+  background: transparent;
+  color: #d1f1ff;
+  font-size: 12px;
+}
+.example-button:hover { color: #fff; border-color: currentColor; }
 .sort-control { display: flex; align-items: center; position: relative; color: var(--muted); }
 .sort-control svg:first-child { position: absolute; left: 8px; pointer-events: none; }
 .sort-control svg:last-child { position: absolute; right: 7px; pointer-events: none; }
@@ -220,8 +230,18 @@
   transform: translateY(-1px) rotate(-45deg);
 }
 .task-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.task-title { display: flex; align-items: baseline; gap: 7px; }
 .task-content strong { font-size: 15px; }
 .task-content p { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+.example-tag {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border: 1px solid rgb(195 236 255 / .25);
+  border-radius: 5px;
+  color: #d1eaff;
+  font-size: 10px;
+  line-height: 1.35;
+}
 .task-row.done strong { color: var(--muted); text-decoration: line-through; }
 .task-time { display: flex; align-items: center; gap: 5px; width: fit-content; margin-top: 6px; font-size: 12px; color: var(--muted); }
 .task-time.late { color: #ffdfa3; }
@@ -239,6 +259,72 @@
 }
 .icon-button:hover { border-color: var(--line); }
 .edit-button { margin: -5px -3px 0 0; }
+.carousel-viewport { overflow: hidden; padding: 9px 10px; }
+.carousel-list {
+  display: grid;
+  grid-auto-rows: 96px;
+  gap: 5px;
+  min-height: 298px;
+}
+.carousel-list .task-row {
+  align-items: center;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid rgb(225 243 255 / .17);
+  border-radius: 12px;
+  background: rgb(5 34 70 / .22);
+}
+.carousel-list .task-row:hover, .carousel-list .task-row:focus-within {
+  border-color: var(--line);
+  background: rgb(177 221 255 / .12);
+}
+.carousel-list .task-row.done { background: rgb(5 34 70 / .1); }
+.carousel-list .task-check, .carousel-list .edit-button { margin: 0; }
+.carousel-list .task-title strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.3;
+}
+.carousel-list .task-content p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carousel-list .task-time { margin-top: 4px; }
+.carousel-list.enter-next { --slide-from: 28px; animation: task-page-in 360ms cubic-bezier(.2, .8, .25, 1) both; }
+.carousel-list.enter-previous { --slide-from: -28px; animation: task-page-in 360ms cubic-bezier(.2, .8, .25, 1) both; }
+@keyframes task-page-in {
+  from { transform: translateX(var(--slide-from)); opacity: .35; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.carousel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 53px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--line);
+}
+.carousel-range { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+.carousel-dots { display: flex; gap: 4px; }
+.carousel-dots span { width: 5px; height: 5px; border-radius: 10px; background: rgb(223 244 255 / .4); }
+.carousel-dots .current { width: 15px; background: #d0edff; }
+.carousel-controls { display: flex; align-items: center; gap: 4px; }
+.carousel-page { min-width: 35px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.carousel-button {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-color: rgb(225 243 255 / .22);
+  background: rgb(5 34 70 / .22);
+  color: #e9f6ff;
+}
+.playback-button { margin-left: 3px; background: rgb(176 219 255 / .19); }
+.playback-button:hover { background: rgb(176 219 255 / .3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-list.enter-next, .carousel-list.enter-previous { animation: none; }
+}
+
 .right-column { display: grid; min-width: 0; gap: 14px; }
 .reminder-panel, .summary-panel { padding: 15px 17px; }
 .summary-panel .field { margin-top: 10px; }

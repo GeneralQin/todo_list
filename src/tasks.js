@@ -1,6 +1,42 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const storageKey = 'rixu.tasks.v1'
+export const TASKS_PER_PAGE = 3
+
+const examples = [
+  ['安排本周三件重要的事', '先列出三件最想推进的事，为每件留出一段时间。'],
+  ['复习 C++ 哈希表', '用 unordered_map 重写两数之和，试试 [3, 3] 这个边界用例。'],
+  ['整理课堂笔记', '挑一节课，用自己的话写下三个知识点。'],
+  ['清理下载文件夹', '把需要留存的资料归到对应目录。'],
+  ['出门散步 20 分钟', '离开屏幕，走一段熟悉的路线。'],
+  ['安排一次专注学习', '设一个 25 分钟的计时器，只做手头这一件事。'],
+  ['写下今天的学习收获', '记一个弄懂的问题，再留一个明天想问的问题。'],
+  ['准备明天要带的东西', '把课本、充电器和水杯放进书包。', true],
+  ['归档上周的学习资料', '把讲义和练习按课程放好。', true],
+]
+
+export function createExampleTasks() {
+  const now = Date.now()
+  return examples.map(([title, note, done = false], index) => ({
+    id: `example-${index + 1}`,
+    example: true,
+    title,
+    note,
+    done,
+    createdAt: now - index,
+    reminderAt: null,
+    remindedAt: null,
+  }))
+}
+
+export function sortTasks(tasks, sort) {
+  return [...tasks].sort((first, second) => {
+    const byStatus = Number(first.done) - Number(second.done)
+    const byReminder = (first.reminderAt ?? Infinity) - (second.reminderAt ?? Infinity)
+    return byStatus || (sort === 'time' ? byReminder : 0) || second.createdAt - first.createdAt
+  })
+}
+
 const dateFormat = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' })
 const timeFormat = new Intl.DateTimeFormat('zh-CN', {
   hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
@@ -32,7 +68,7 @@ function readTasks() {
 }
 
 export function useTasks() {
-  const [tasks, setTasks] = useState(() => readTasks() ?? [])
+  const [tasks, setTasks] = useState(() => readTasks() ?? createExampleTasks())
   const [saveFailed, setSaveFailed] = useState(false)
   const latest = useRef(tasks)
   const memoryOnly = useRef(false)

@@ -1,0 +1,66 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: #fff;
+  background: #155994;
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --muted: #e2effc;
+  --line: rgb(225 243 255 / .28);
+  --glass: #225787;
+  --glass-strong: #1e4b78;
+  --glass-filter: none;
+  --glass-shadow: inset 0 1px 0 rgb(255 255 255 / .12), 0 10px 28px rgb(8 37 74 / .16);
+  --focus: #fff0b7;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass: rgb(15 51 92 / .65);
+    --glass-strong: rgb(14 48 87 / .87);
+    --glass-filter: blur(22px) saturate(135%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass: #225787;
+    --glass-strong: #1e4b78;
+    --glass-filter: none;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse 32% 11% at 94% 15%, rgb(223 244 255 / .67), transparent 93%),
+    radial-gradient(ellipse 27% 8% at 83% 20%, rgb(223 244 255 / .53), transparent 90%),
+    radial-gradient(ellipse 41% 13% at 110% 24%, rgb(201 233 255 / .64), transparent 94%),
+    radial-gradient(ellipse 35% 12% at 0% 56%, rgb(194 226 249 / .61), transparent 94%),
+    radial-gradient(ellipse 34% 10% at 14% 63%, rgb(204 231 251 / .49), transparent 96%),
+    radial-gradient(ellipse 44% 13% at 95% 94%, rgb(172 214 245 / .38), transparent 94%),
+    linear-gradient(158deg, #1761a6 0%, #2e7dbd 38%, #4993c6 67%, #286ba6 100%);
+  background-attachment: fixed;
+}
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: .65; }
+button, input, textarea, select { color: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+h1, h2, h3, p { margin: 0; }
+svg { flex-shrink: 0; vertical-align: middle; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -147,6 +147,53 @@ function TaskRow({ task, now, onToggle, onEdit }) {
   )
 }
 
+function DailySummary({ date }) {
+  const storageKey = `rixu.summary.v1.${date}`
+  const [summary, setSummary] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) ?? ''
+    } catch {
+      return ''
+    }
+  })
+  const [saveFailed, setSaveFailed] = useState(false)
+
+  useEffect(() => {
+    function sync(event) {
+      if (saveFailed || event.storageArea !== localStorage) return
+      if (event.key === storageKey || event.key === null) setSummary(event.newValue ?? '')
+    }
+
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [saveFailed, storageKey])
+
+  function changeSummary(event) {
+    const value = event.target.value
+    setSummary(value)
+    try {
+      if (value) localStorage.setItem(storageKey, value)
+      else localStorage.removeItem(storageKey)
+      setSaveFailed(false)
+    } catch {
+      setSaveFailed(true)
+    }
+  }
+
+  return (
+    <section className="panel summary-panel" aria-labelledby="summary-heading">
+      <div className="panel-caption"><Icon name="edit" size={17} /><h2 id="summary-heading">今日总结</h2></div>
+      <div className="field">
+        <textarea rows={4} value={summary} onChange={changeSummary} aria-labelledby="summary-heading"
+          aria-describedby="summary-status" placeholder="今天做了什么？有什么收获或想记下的事？" />
+      </div>
+      <p id="summary-status" className={saveFailed ? 'form-error' : 'field-hint'} role="status">
+        {saveFailed ? '暂时无法保存，请在离开页面前复制总结内容。' : '填写后自动保存到此浏览器。'}
+      </p>
+    </section>
+  )
+}
+
 function App() {
   const { tasks, updateTasks, saveFailed } = useTasks()
   const { now, notices, dismiss } = useReminders(tasks, updateTasks)
@@ -157,6 +204,7 @@ function App() {
   const editorTrigger = useRef(null)
   const addButton = useRef(null)
 
+  const localDate = toLocalInput(now).slice(0, 10)
   const today = tasks.filter((task) => !task.done && task.reminderAt !== null && isSameDay(task.reminderAt, now))
   const done = tasks.filter((task) => task.done)
   const pending = tasks.length - done.length
@@ -304,7 +352,8 @@ function App() {
               )}
             </section>
 
-            <aside className="right-column" aria-label="提醒信息">
+            <aside className="right-column" aria-label="总结与提醒">
+              <DailySummary key={localDate} date={localDate} />
               <section className="panel reminder-panel" aria-labelledby="upcoming-heading">
                 <div className="panel-caption"><Icon name="bell" size={17} /><h2 id="upcoming-heading">即将提醒</h2></div>
                 {upcoming.length ? (

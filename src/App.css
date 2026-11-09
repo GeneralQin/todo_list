@@ -240,7 +240,8 @@
 .icon-button:hover { border-color: var(--line); }
 .edit-button { margin: -5px -3px 0 0; }
 .right-column { display: grid; min-width: 0; gap: 14px; }
-.reminder-panel { padding: 15px 17px; }
+.reminder-panel, .summary-panel { padding: 15px 17px; }
+.summary-panel .field { margin-top: 10px; }
 .reminder-panel .panel-caption { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .reminder-panel p { margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .upcoming-list button {

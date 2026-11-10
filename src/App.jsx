@@ -5,6 +5,8 @@ import { createExampleTasks, formatReminder, isSameDay, notificationPermission, 
 import './App.css'
 
 const fullDate = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })
+const scheduleDate = new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', weekday: 'short' })
+const scheduleTime = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 const views = [
   { id: 'all', icon: 'layers', title: '全部待办', empty: '添加第一条待办，把想做的事记下来。' },
   { id: 'today', icon: 'sun', title: '今日提醒', empty: '设置在今天的提醒会出现在这里。' },
@@ -149,6 +151,61 @@ function TaskRow({ task, now, onToggle, onEdit }) {
         <Icon name="edit" size={18} />
       </button>
     </li>
+  )
+}
+
+function ScheduleTable({ tasks, now, onToggle, onEdit }) {
+  const scheduledTasks = tasks
+    .filter((task) => task.reminderAt !== null)
+    .sort((first, second) => first.reminderAt - second.reminderAt || Number(first.done) - Number(second.done))
+
+  return (
+    <section className="panel schedule-panel" aria-labelledby="schedule-heading">
+      <div className="schedule-heading">
+        <div>
+          <div className="panel-caption"><Icon name="calendar" size={17} /><h2 id="schedule-heading">日程表</h2></div>
+          <p>按时间查看已安排的待办</p>
+        </div>
+        <span className="schedule-count">{scheduledTasks.length} 项</span>
+      </div>
+      {scheduledTasks.length ? (
+        <div className="schedule-scroll">
+          <table className="schedule-table">
+            <thead>
+              <tr><th scope="col">日期</th><th scope="col">时间</th><th scope="col">任务</th><th scope="col">状态</th><th scope="col"><span className="sr-only">操作</span></th></tr>
+            </thead>
+            <tbody>
+              {scheduledTasks.map((task) => (
+                <tr key={task.id} className={task.done ? 'schedule-row done' : 'schedule-row'}>
+                  <td className="schedule-date">{isSameDay(task.reminderAt, now) ? '今天' : scheduleDate.format(task.reminderAt)}</td>
+                  <td className="schedule-time">{scheduleTime.format(task.reminderAt)}</td>
+                  <td className="schedule-task">
+                    <strong title={task.title}>{task.title}</strong>
+                    {task.note && <small title={task.note}>{task.note}</small>}
+                  </td>
+                  <td>
+                    <label className="schedule-status">
+                      <input className="task-check" type="checkbox" checked={task.done} onChange={() => onToggle(task.id)} aria-label={`${task.done ? '标记未完成' : '完成'}：${task.title}`} />
+                      <span>{task.done ? '已完成' : '待完成'}</span>
+                    </label>
+                  </td>
+                  <td>
+                    <button type="button" className="icon-button schedule-edit" aria-label={`编辑：${task.title}`} title="编辑任务" onClick={() => onEdit(task.id)}>
+                      <Icon name="edit" size={17} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="schedule-empty">
+          <span className="empty-icon"><Icon name="calendar" size={24} /></span>
+          <div><strong>还没有安排时间的待办</strong><p>新建或编辑待办时添加时间，日程表会自动生成。</p></div>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -337,6 +394,8 @@ function App() {
           </div>
 
           {saveFailed && <p className="warning" role="alert">浏览器暂时无法保存待办。刷新页面前请保留需要的内容。</p>}
+          <ScheduleTable tasks={tasks} now={now} onToggle={toggleTask} onEdit={openEditor} />
+
           <div className="notices" aria-live="polite">
             {dueNotices.map((task) => (
               <div className="warning reminder-notice" key={task.id}>
